@@ -22,7 +22,7 @@ import (
 	webview2 "github.com/jchv/go-webview2"
 )
 
-const launcherVersion = "1.3.6"
+const launcherVersion = "1.3.7"
 const titleID = "454107F9"
 
 //go:embed ui.html
@@ -256,6 +256,11 @@ func writeGameConfig() error {
 	sb.WriteString("# Do not edit by hand; the launcher rewrites it on every game launch.\n\n")
 	for _, k := range keys {
 		sb.WriteString(fmt.Sprintf("%s = %s\n", k, tomlValue(all[k])))
+	}
+	// Before the one-time install the build folder does not exist yet; create it so
+	// saving settings works and the config is already in place after the build.
+	if err := os.MkdirAll(filepath.Dir(cfg), 0o755); err != nil {
+		return err
 	}
 	if err := os.WriteFile(cfg, []byte(sb.String()), 0o644); err != nil {
 		return err
