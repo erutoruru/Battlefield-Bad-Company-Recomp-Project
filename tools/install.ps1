@@ -56,11 +56,20 @@ if (-not $vs) {
 }
 Write-Host "Visual Studio: $vs"
 
-$llvm = Join-Path $env:ProgramFiles 'LLVM\bin'
-if (-not (Test-Path (Join-Path $llvm 'clang++.exe'))) {
+# clang: prefer the copy bundled with Visual Studio ("C++ Clang tools"), then a
+# standalone LLVM, then one on PATH; install LLVM only when none exists.
+$llvm = @((Join-Path $vs 'VC\Tools\Llvm\x64\bin'), (Join-Path $env:ProgramFiles 'LLVM\bin')) |
+    Where-Object { Test-Path (Join-Path $_ 'clang++.exe') } | Select-Object -First 1
+if (-not $llvm) {
+    $onPath = Get-Command clang++ -ErrorAction SilentlyContinue
+    if ($onPath) { $llvm = Split-Path -Parent $onPath.Source }
+}
+if (-not $llvm) {
     Install-Winget 'LLVM.LLVM'
+    $llvm = Join-Path $env:ProgramFiles 'LLVM\bin'
     if (-not (Test-Path (Join-Path $llvm 'clang++.exe'))) { Fail "Could not install LLVM (clang)." }
 }
+Write-Host "clang: $llvm"
 
 # Load the x64 developer environment (Windows SDK, rc.exe, link.exe, bundled CMake/Ninja).
 $vcvars = Join-Path $vs 'VC\Auxiliary\Build\vcvars64.bat'
