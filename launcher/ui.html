@@ -1,0 +1,626 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src data:; style-src 'unsafe-inline'; script-src 'unsafe-inline'">
+<title>Bad Company Launcher</title>
+<style>
+:root{
+  --bg:#111214; --panel:#1a1b1e; --field:#222327; --field2:#2a2b30; --line:#34353a;
+  --text:#ece6d6; --muted:#9a968c; --accent:#e8a317; --accent2:#ffbf3a; --ok:#6fcf6f; --bad:#e05a4f;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);color:var(--text);
+  font-family:"Segoe UI",system-ui,sans-serif;font-size:13.5px;user-select:none}
+#bg{position:fixed;inset:0;background-size:cover;background-position:center}
+#shade{position:fixed;inset:0;background:
+  linear-gradient(90deg,#111214 0%,#111214 55%,rgba(17,18,20,.92) 58%,rgba(17,18,20,.75) 61%,
+    rgba(17,18,20,.50) 64%,rgba(17,18,20,.26) 67%,rgba(17,18,20,.09) 70%,rgba(17,18,20,0) 73%),
+  linear-gradient(0deg,rgba(17,18,20,.55) 0%,rgba(17,18,20,0) 16%)}
+#app{position:relative;height:100%;display:flex;flex-direction:column;padding:26px 30px 18px 30px}
+header{display:flex;align-items:center;gap:16px}
+header img{width:58px;height:58px;filter:drop-shadow(0 2px 6px rgba(0,0,0,.6))}
+.brand1{font-family:Bahnschrift,"Segoe UI",sans-serif;font-weight:700;font-size:15px;letter-spacing:5px;color:var(--muted)}
+.brand2{font-family:Bahnschrift,Impact,sans-serif;font-weight:700;font-size:38px;line-height:1;letter-spacing:1px}
+.brand2 span{color:var(--accent)}
+.brand3{font-size:11px;letter-spacing:3px;color:var(--muted);margin-top:4px}
+nav{display:flex;gap:22px;margin:20px 0 14px 0;border-bottom:1px solid var(--line);width:610px}
+nav button{background:none;border:none;color:var(--muted);font:inherit;font-size:14.5px;padding:8px 2px;cursor:pointer;
+  border-bottom:2px solid transparent;margin-bottom:-1px}
+nav button:hover{color:var(--text)}
+nav button.active{color:var(--text);border-bottom-color:var(--accent);font-weight:600}
+main{flex:1;width:610px;overflow-y:auto;padding-right:14px}
+main::-webkit-scrollbar{width:6px} main::-webkit-scrollbar-thumb{background:#4a4a50;border-radius:3px}
+section{display:none} section.active{display:block}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:14px 22px}
+.full{grid-column:1/-1}
+label.t{display:block;color:var(--muted);font-size:12.5px;margin-bottom:6px;text-transform:uppercase;letter-spacing:.6px}
+select,input[type=text],input[type=password]{width:100%;background:var(--field);color:var(--text);border:1px solid var(--line);
+  border-radius:4px;padding:8px 10px;font:inherit;outline:none}
+select:focus,input:focus{border-color:var(--accent)}
+select:disabled,input:disabled{opacity:.45}
+.row{display:flex;gap:10px;align-items:center}
+.btn{background:var(--field2);color:var(--text);border:1px solid var(--line);border-radius:4px;padding:8px 16px;font:inherit;
+  font-weight:600;cursor:pointer;white-space:nowrap}
+.btn:hover{background:#35363c}
+.btn.accent{background:var(--accent);border-color:var(--accent);color:#1a1405}
+.btn.accent:hover{background:var(--accent2)}
+.check{display:flex;align-items:center;gap:10px;cursor:pointer;padding:4px 0;font-weight:600}
+.check input{appearance:none;width:20px;height:20px;border-radius:4px;border:1px solid var(--line);background:var(--field);
+  display:grid;place-content:center;cursor:pointer;flex:none}
+.check input:checked{background:var(--accent);border-color:var(--accent)}
+.check input:checked::after{content:"";width:10px;height:6px;border:2px solid #1a1405;border-top:none;border-right:none;transform:rotate(-45deg) translate(1px,-1px)}
+.slider{display:flex;align-items:center;gap:12px}
+input[type=range]{flex:1;accent-color:var(--accent)}
+.val{min-width:46px;text-align:right;color:var(--muted)}
+.note{color:var(--muted);font-size:12.5px;margin-top:6px;line-height:1.45}
+.soon{display:inline-block;font-size:10.5px;letter-spacing:1px;padding:2px 7px;border-radius:3px;background:#3a3020;color:var(--accent);margin-left:8px;vertical-align:middle}
+.res{margin-top:8px;font-size:12.5px}
+.res.ok{color:var(--ok)} .res.bad{color:var(--bad)}
+.keys{display:grid;grid-template-columns:1fr 150px;gap:8px 16px;align-items:center;margin-top:6px}
+.keys .k{background:var(--field2);border:1px solid var(--line);border-radius:4px;padding:7px 0;text-align:center;cursor:pointer;font-weight:600}
+.keys .k.wait{border-color:var(--accent);color:var(--accent)}
+.user{font-family:Bahnschrift,sans-serif;font-size:30px;font-weight:700;color:var(--accent);margin:4px 0 14px 0}
+.status{display:flex;align-items:center;gap:8px;margin-top:4px}
+.dot{width:9px;height:9px;border-radius:50%;background:#666}
+.dot.on{background:var(--ok)} .dot.off{background:var(--bad)}
+.ach-head{display:flex;gap:26px;margin-bottom:14px}
+.ach-head b{font-family:Bahnschrift,sans-serif;font-size:24px;color:var(--accent)}
+.ach-head div{color:var(--muted);font-size:12px}
+.ach{display:flex;gap:12px;align-items:center;padding:9px;border-radius:5px;background:rgba(34,35,39,.85);margin-bottom:7px}
+.ach img,.ach .ph{width:48px;height:48px;border-radius:4px;flex:none;background:#2c2d32}
+.ach.locked img{filter:grayscale(1) brightness(.45)}
+.ach .n{font-weight:700} .ach .d{color:var(--muted);font-size:12.5px;margin-top:2px}
+.ach .g{margin-left:auto;text-align:right;font-weight:700;color:var(--accent);min-width:64px}
+.ach .g small{display:block;color:var(--muted);font-weight:400;font-size:11px}
+code{background:#26272c;padding:2px 6px;border-radius:3px;font-family:Consolas,monospace;font-size:12px;user-select:text}
+footer{display:flex;align-items:flex-end;justify-content:space-between;margin-top:14px}
+.fbtns{display:flex;gap:8px;flex-wrap:wrap}
+#play{width:230px;height:62px;font-family:Bahnschrift,sans-serif;font-size:24px;font-weight:700;letter-spacing:2px;border-radius:5px}
+#play:disabled{opacity:.5;cursor:not-allowed}
+.foot{margin-top:8px;font-size:12px;color:var(--muted);display:flex;align-items:center;gap:7px}
+#toast{position:fixed;left:50%;bottom:96px;transform:translateX(-50%);background:#2a2b30;border:1px solid var(--accent);
+  padding:10px 18px;border-radius:5px;opacity:0;transition:opacity .25s;pointer-events:none}
+#toast.show{opacity:1}
+</style>
+</head>
+<body>
+<div id="bg"></div><div id="shade"></div>
+<div id="app">
+  <header>
+    <img id="logo" alt="">
+    <div>
+      <div class="brand1">BATTLEFIELD</div>
+      <div class="brand2">BAD <span>COMPANY</span></div>
+      <div class="brand3" data-i18n="subtitle">PC RECOMPILATION</div>
+    </div>
+  </header>
+
+  <nav id="tabs">
+    <button data-tab="general" class="active" data-i18n="tab_general">Genel</button>
+    <button data-tab="graphics" data-i18n="tab_graphics">Grafik</button>
+    <button data-tab="advanced" data-i18n="tab_advanced">Gelişmiş</button>
+    <button data-tab="audio" data-i18n="tab_audio">Ses</button>
+    <button data-tab="controls" data-i18n="tab_controls">Kontroller</button>
+    <button data-tab="online" data-i18n="tab_online">Online</button>
+    <button data-tab="achievements" data-i18n="tab_achievements">Başarımlar</button>
+  </nav>
+
+  <main>
+    <!-- GENEL -->
+    <section id="general" class="active">
+      <div class="grid">
+        <div class="full">
+          <label class="t" data-i18n="game_folder">Oyun dosyaları klasörü</label>
+          <div class="row"><input type="text" id="game_data"><button class="btn" id="browse" data-i18n="browse">Gözat</button></div>
+          <div class="row" style="margin-top:10px"><button class="btn" id="verify" data-i18n="verify">Oyun dosyalarını doğrula</button></div>
+          <div class="res" id="verify_res"></div>
+        </div>
+        <div>
+          <label class="t" data-i18n="launcher_lang">Launcher dili</label>
+          <select id="lang"><option value="tr">Türkçe</option><option value="en">English</option></select>
+        </div>
+        <div>
+          <label class="t" data-i18n="game_lang">Oyun dili</label>
+          <select data-cvar="user_language">
+            <option value="1">English</option><option value="3">Deutsch</option><option value="4">Français</option>
+            <option value="5">Español</option><option value="6">Italiano</option><option value="11">Polski</option>
+            <option value="12">Русский</option><option value="2">日本語</option>
+          </select>
+        </div>
+        <div class="full">
+          <label class="check"><input type="checkbox" id="close_on_launch"><span data-i18n="close_on_launch">Oyun açılınca launcher'ı kapat</span></label>
+        </div>
+        <div class="full row">
+          <button class="btn" data-folder="saves" data-i18n="open_saves">Kayıt klasörünü aç</button>
+          <button class="btn" data-folder="launcher" data-i18n="open_launcher">Launcher klasörünü aç</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- GRAFIK -->
+    <section id="graphics">
+      <div class="grid">
+        <div><label class="t" data-i18n="gpu">Ekran kartı</label><select id="gpu"></select></div>
+        <div><label class="t" data-i18n="internal_res">Dahili çözünürlük</label>
+          <select data-cvar="resolution_scale">
+            <option value="1">1x — 1280 × 720</option><option value="2">2x — 2560 × 1440</option>
+            <option value="3">3x — 3840 × 2160</option><option value="4">4x — 5120 × 2880</option>
+          </select></div>
+        <div><label class="t" data-i18n="monitor">Monitör</label><select data-cvar="monitor" id="monitor"></select></div>
+        <div><label class="t" data-i18n="aniso">Doku filtreleme</label>
+          <select data-cvar="anisotropic_override">
+            <option value="-1" data-i18n="game_default">Oyun varsayılanı</option><option value="0" data-i18n="off">Kapalı</option>
+            <option value="2">2x</option><option value="3">4x</option><option value="4">8x</option><option value="5">16x</option>
+          </select></div>
+        <div><label class="t" data-i18n="display_mode">Görüntü modu</label>
+          <select id="display_mode">
+            <option value="window" data-i18n="windowed">Pencereli</option>
+            <option value="borderless" data-i18n="borderless">Kenarlıksız tam ekran</option>
+            <option value="exclusive" data-i18n="exclusive">Özel tam ekran</option>
+          </select></div>
+        <div><label class="t" data-i18n="window_size">Pencere boyutu</label>
+          <select id="window_size">
+            <option value="1280x720">1280 × 720</option><option value="1600x900">1600 × 900</option>
+            <option value="1920x1080">1920 × 1080</option><option value="2560x1440">2560 × 1440</option>
+          </select></div>
+        <div class="full"><label class="t" data-i18n="readback">Işık / pozlama okuma</label>
+          <select data-cvar="readback_resolve">
+            <option value="fast" data-i18n="rb_fast">Hızlı (önerilen)</option>
+            <option value="some" data-i18n="rb_some">Dengeli</option>
+            <option value="full" data-i18n="rb_full">Tam doğru (yavaş)</option>
+            <option value="none" data-i18n="rb_none">Kapalı (görüntü kararır)</option>
+          </select>
+          <div class="note" data-i18n="readback_note">Oyunun otomatik pozlaması için gerekli. Kapatılırsa görüntü çok karanlık olur.</div></div>
+        <label class="check"><input type="checkbox" data-cvar="vsync"><span>VSync</span></label>
+        <label class="check"><input type="checkbox" data-cvar="native_2x_msaa"><span data-i18n="msaa">Native 2× MSAA</span></label>
+        <label class="check"><input type="checkbox" data-cvar="present_letterbox"><span data-i18n="letterbox">Kenar boşlukları (16:9 koru)</span></label>
+        <label class="check"><input type="checkbox" data-cvar="store_shaders"><span data-i18n="shader_cache">Shader önbelleği</span></label>
+        <label class="check"><input type="checkbox" data-cvar="present_dither"><span data-i18n="dither">Renk bantlaşmasını azalt</span></label>
+        <label class="check"><input type="checkbox" data-cvar="async_shader_compilation"><span data-i18n="async">Asenkron shader derleme</span></label>
+      </div>
+    </section>
+
+    <!-- GELISMIS -->
+    <section id="advanced">
+      <div class="grid">
+        <div class="full"><label class="t"><span data-i18n="fov">Görüş açısı (FOV)</span></label>
+          <div class="slider"><input type="range" min="55" max="120" step="1" id="fov_h"><span class="val" id="fov_val"></span></div></div>
+        <div class="full"><label class="t"><span data-i18n="weapon_size">Silah boyutu</span></label>
+          <div class="slider"><input type="range" min="50" max="100" step="5" id="weapon_size"><span class="val" id="ws_val"></span></div>
+          <div class="note" data-i18n="fov_note">Ekranda görünen yatay açı (16:9). Oyunun varsayılanı 61°. Kaydettiğinizde tüm bölüm dosyalarına uygulanır, ilk seferde 1-2 dakika sürebilir.</div></div>
+        <div class="full" style="margin-top:4px"><label class="t" data-i18n="game_settings">Oyun ayarları</label></div>
+        <div class="full"><label class="t" data-i18n="shadow_dist">Gölge mesafesi</label>
+          <select id="shadow_distance">
+            <option value="default" data-i18n="sd_default">Oyun varsayılanı (100 m)</option>
+            <option value="far" data-i18n="sd_far">Uzak (150 m)</option>
+            <option value="ultra" data-i18n="sd_ultra">Çok uzak (200 m)</option>
+          </select>
+          <div class="note" data-i18n="sd_note">Uzaktaki nesnelerin gölgelerini de gösterir. Daha fazla GPU gücü ister.</div></div>
+        <label class="check full"><input type="checkbox" id="sprint_zoom"><span data-i18n="sprint_zoom">Koşarken yakınlaştırma (oyunun orijinal efekti)</span></label>
+        <label class="check full"><input type="checkbox" id="hdr_compat"><span data-i18n="hdr_compat">HDR uyumluluk modu (beyaz patlama / mavi duman düzeltmesi)</span></label>
+        <label class="check full"><input type="checkbox" id="full_res_fx"><span data-i18n="full_res_fx">Duman ve tozu tam çözünürlükte çiz (mavi duman düzeltmesi)</span></label>
+        <label class="check"><input type="checkbox" id="motion_blur"><span data-i18n="motion_blur">Hareket bulanıklığı</span></label>
+        <label class="check"><input type="checkbox" id="film_grain"><span data-i18n="film_grain">Film greni</span></label>
+        <div class="full">
+          <label class="check"><input type="checkbox" id="auto_aim"><span data-i18n="auto_aim">Nişan yardımı (aim assist)</span></label>
+          <div class="note" data-i18n="auto_aim_note">Fare ile oynarken kapatmanız önerilir.</div>
+        </div>
+        <div class="full" style="margin-top:6px">
+          <label class="check"><input type="checkbox" id="debug_log"><span data-i18n="debug_log">Genişletilmiş tanılama (ayrıntılı log)</span></label>
+          <div class="note" data-i18n="debug_note">Sorun bildirirken açın. Oyunu biraz yavaşlatabilir.</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SES -->
+    <section id="audio">
+      <div class="grid">
+        <div class="full"><label class="t" data-i18n="audio_buffer">Ses arabelleği</label>
+          <select data-cvar="audio_maxqframes">
+            <option value="8" data-i18n="ab_low">8 — düşük gecikme</option>
+            <option value="16" data-i18n="ab_mid">16 — önerilen</option>
+            <option value="32" data-i18n="ab_high">32 — en az cızırtı</option>
+            <option value="64">64</option>
+          </select>
+          <div class="note" data-i18n="audio_note">Menü geçişlerinde çıtırtı duyarsanız değeri artırın.</div></div>
+        <label class="check full"><input type="checkbox" data-cvar="audio_mute"><span data-i18n="mute">Oyun sesini kapat</span></label>
+      </div>
+    </section>
+
+    <!-- KONTROLLER -->
+    <section id="controls">
+      <div class="grid">
+        <div><label class="t" data-i18n="controller">Kontrolcü</label>
+          <select data-cvar="input_backend"><option value="sdl">SDL — Xbox / PlayStation</option><option value="xinput">XInput — Xbox</option></select></div>
+        <div style="padding-top:22px"><label class="check"><input type="checkbox" data-cvar="mnk_mode"><span data-i18n="kbm">Klavye ve fare</span></label></div>
+        <div><label class="check"><input type="checkbox" data-cvar="mnk_mouse"><span data-i18n="mouse_aim">Fare ile nişan al</span></label>
+          <label class="check"><input type="checkbox" data-cvar="bfbc_mouse_invert_y"><span data-i18n="invert_y">Dikey ekseni ters çevir</span></label></div>
+        <div class="full"><label class="t" data-i18n="prompts">Oyun içi tuş simgeleri</label>
+          <select id="button_prompts">
+            <option value="xbox" data-i18n="pr_xbox">Xbox (A B X Y)</option>
+            <option value="ps" data-i18n="pr_ps">PlayStation (✕ ○ □ △)</option>
+            <option value="kbm" data-i18n="pr_kbm">Klavye ve fare (atadığınız tuşlar)</option>
+          </select>
+          <div class="note" data-i18n="prompts_note">Kaydettiğinizde oyun dosyalarına uygulanır (birkaç saniye sürebilir). Xbox seçilirse orijinal dosyalar geri yüklenir.</div></div>
+        <div><label class="t" data-i18n="sens">Fare hassasiyeti</label>
+          <div class="slider"><input type="range" min="0.1" max="5" step="0.1" data-cvar="mnk_sensitivity" id="sens"><span class="val" id="sens_val"></span></div></div>
+        <div><label class="t" data-i18n="veh_sens">Araç silahı hassasiyeti</label>
+          <div class="slider"><input type="range" min="0.2" max="3" step="0.1" data-cvar="bfbc_vehicle_sens" id="vsens"><span class="val" id="vsens_val"></span></div></div>
+        <div><label class="t" data-i18n="zoom_sens">Nişan alırken hassasiyet (dürbün)</label>
+          <div class="slider"><input type="range" min="0.3" max="2" step="0.05" data-cvar="bfbc_zoom_sens" id="zsens"><span class="val" id="zsens_val"></span></div></div>
+        <div><label class="t" data-i18n="tank_speed">Tank tareti dönüş hızı</label>
+          <div class="slider"><input type="range" min="100" max="300" step="10" id="tank_speed"><span class="val" id="tank_val"></span></div>
+          <div class="note" data-i18n="tank_note">100% = oyunun orijinali. Düşman tankları da aynı hızda döner.</div></div>
+        <div class="full"><label class="check"><input type="checkbox" data-cvar="bfbc_weapon_keys"><span data-i18n="weapon_keys">1-5 tuşlarıyla silah seçimi</span></label>
+          <div class="note" data-i18n="weapon_keys_note">1 ana silah · 2 bomba atar / el bombası · 3 bıçak · 4 ve 5 = E ile gelen 1. ve 2. eşya (sınıfa göre şırınga, tamir aleti, RPG…). Bu tuşlara atanmış başka işlevler devre dışı kalır.</div></div>
+        <div class="full row" style="justify-content:space-between">
+          <div class="note" data-i18n="kb_note">Bir tuşa tıklayıp yeni tuşa veya fare düğmesine basın.</div>
+          <button class="btn" id="kb_reset" data-i18n="kb_reset">Önerilen FPS düzeni</button></div>
+        <div class="full keys" id="keys"></div>
+      </div>
+    </section>
+
+    <!-- ONLINE -->
+    <section id="online">
+      <div class="grid">
+        <div class="full"><label class="t" data-i18n="conn_mode">Bağlantı modu</label>
+          <select id="mode"><option value="offline" data-i18n="offline">Çevrimdışı</option><option value="online" data-i18n="online_nobk">Çevrimiçi — nobkonline.com</option></select></div>
+        <div class="full">
+          <div class="status"><span class="dot" id="srv_dot"></span><span id="srv_text" data-i18n="srv_unknown">Sunucu durumu bilinmiyor</span>
+            <button class="btn" id="srv_check" style="margin-left:auto;padding:5px 12px" data-i18n="check">Kontrol et</button></div>
+        </div>
+        <div class="full" id="login_box">
+          <div class="grid">
+            <div><label class="t" data-i18n="username">Kullanıcı adı</label><input type="text" id="l_user" autocomplete="username"></div>
+            <div><label class="t" data-i18n="password">Şifre</label><input type="password" id="l_pass" autocomplete="current-password"></div>
+          </div>
+          <div class="row" style="margin-top:12px">
+            <button class="btn accent" id="login" data-i18n="login">Giriş yap</button>
+            <button class="btn" id="register" data-i18n="register">Hesap oluştur</button>
+          </div>
+          <div class="res" id="login_res"></div>
+        </div>
+        <div class="full" id="account_box" style="display:none">
+          <label class="t" data-i18n="signed_in">Giriş yapıldı</label>
+          <div class="user" id="acc_name"></div>
+          <div class="row"><button class="btn" id="my_account" data-i18n="my_account">Hesabım</button><button class="btn" id="logout" data-i18n="logout">Çıkış yap</button></div>
+        </div>
+        <div class="full note" data-i18n="online_note">Oyun içi çok oyunculu desteği geliştirme aşamasındadır.</div>
+      </div>
+    </section>
+
+    <!-- BASARIMLAR -->
+    <section id="achievements">
+      <div id="ach_body"></div>
+    </section>
+  </main>
+
+  <footer>
+    <div>
+      <div class="fbtns">
+        <button class="btn" id="save" data-i18n="save">Ayarları kaydet</button>
+        <button class="btn" id="defaults" data-i18n="defaults">Varsayılanlara dön</button>
+        <button class="btn" id="logs" data-i18n="logs">Logları aç</button>
+        <button class="btn" data-folder="game" data-i18n="game_dir">Oyun klasörü</button>
+      </div>
+      <div class="foot"><span class="dot" id="ready_dot"></span><span id="ready_text"></span> · Launcher v<span id="ver"></span></div>
+    </div>
+    <button class="btn accent" id="play" data-i18n="play">OYNA</button>
+        <button class="btn" id="install" style="display:none" data-i18n="install">Oyunu kur (bir kez)</button>
+  </footer>
+</div>
+<div id="toast"></div>
+
+<script>
+const I18N = {
+ tr:{subtitle:"PC RECOMPILATION",tab_general:"Genel",tab_graphics:"Grafik",tab_advanced:"Gelişmiş",tab_audio:"Ses",tab_controls:"Kontroller",
+  tab_online:"Online",tab_achievements:"Başarımlar",game_folder:"Oyun dosyaları klasörü",browse:"Gözat",verify:"Oyun dosyalarını doğrula",
+  launcher_lang:"Launcher dili",game_lang:"Oyun dili",close_on_launch:"Oyun açılınca launcher'ı kapat",open_saves:"Kayıt klasörünü aç",
+  open_launcher:"Launcher klasörünü aç",open_logs_dir:"Log klasörünü aç",gpu:"Ekran kartı",gpu_auto:"Otomatik (Windows seçer)",internal_res:"Dahili çözünürlük",monitor:"Monitör",aniso:"Doku filtreleme",
+  game_default:"Oyun varsayılanı",off:"Kapalı",display_mode:"Görüntü modu",windowed:"Pencereli",borderless:"Kenarlıksız tam ekran",
+  exclusive:"Özel tam ekran",window_size:"Pencere boyutu",readback:"Işık / pozlama okuma",rb_fast:"Hızlı (önerilen)",rb_some:"Dengeli",
+  rb_full:"Tam doğru (yavaş)",rb_none:"Kapalı (görüntü kararır)",readback_note:"Oyunun otomatik pozlaması için gerekli. Kapatılırsa görüntü çok karanlık olur.",
+  msaa:"Native 2× MSAA",letterbox:"Kenar boşlukları (16:9 koru)",shader_cache:"Shader önbelleği",dither:"Renk bantlaşmasını azalt",
+  async:"Asenkron shader derleme",fov:"Görüş açısı (FOV)",weapon_size:"Silah boyutu",motion_blur:"Hareket bulanıklığı",soon:"YAKINDA",
+  skip_intros:"Introları atla",skip_intros_note:"Açılıştaki logo videolarını atlar. Not: bölüm tanıtım videoları da atlanabilir.",err_game_cfg_failed:"Oyun ayar dosyası yazılamadı",game_settings:"Oyun ayarları",film_grain:"Film greni",auto_aim:"Nişan yardımı (aim assist)",auto_aim_note:"Fare ile oynarken kapatmanız önerilir.",debug_log:"Genişletilmiş tanılama (ayrıntılı log)",debug_note:"Sorun bildirirken açın. Oyunu biraz yavaşlatabilir.",
+  audio_buffer:"Ses arabelleği",ab_low:"8 — düşük gecikme",ab_mid:"16 — önerilen",ab_high:"32 — en az cızırtı",
+  audio_note:"Menü geçişlerinde çıtırtı duyarsanız değeri artırın.",mute:"Oyun sesini kapat",controller:"Kontrolcü",hdr_compat:"HDR uyumluluk modu (beyaz patlama / mavi duman düzeltmesi)",sprint_zoom:"Koşarken yakınlaştırma (oyunun orijinal efekti)",weapon_keys:"1-5 tuşlarıyla silah seçimi",weapon_keys_note:"1 ana silah · 2 bomba atar / el bombası · 3 bıçak · 4 ve 5 = E ile gelen 1. ve 2. eşya (sınıfa göre şırınga, tamir aleti, RPG…). Bu tuşlara atanmış başka işlevler devre dışı kalır.",veh_sens:"Araç silahı hassasiyeti",zoom_sens:"Nişan alırken hassasiyet (dürbün)",tank_speed:"Tank tareti dönüş hızı",tank_note:"100% = oyunun orijinali. Düşman tankları da aynı hızda döner.",full_res_fx:"Duman ve tozu tam çözünürlükte çiz (mavi duman düzeltmesi)",rt_path:"Render yolu",rt_rtv:"RTV — hızlı (önerilen)",rt_rov:"ROV — en doğru renkler, daha yavaş",rt_note:"Patlama izleri veya duman mavi/siyah görünüyorsa ROV'u deneyin.",fov_note:"Ekranda görünen yatay açı (16:9). Oyunun varsayılanı 61°. Kaydettiğinizde tüm bölüm dosyalarına uygulanır, ilk seferde 1-2 dakika sürebilir.",fov_busy:"FOV / silah boyutu uygulanıyor… ",fov_done:"FOV / silah boyutu uygulandı",fov_error:"FOV uygulanamadı: ",shadow_dist:"Gölge mesafesi",sd_default:"Oyun varsayılanı (100 m)",sd_far:"Uzak (150 m)",sd_ultra:"Çok uzak (200 m)",sd_note:"Uzaktaki nesnelerin gölgelerini de gösterir. Daha fazla GPU gücü ister.",prompts:"Oyun içi tuş simgeleri",pr_xbox:"Xbox (A B X Y)",pr_ps:"PlayStation (✕ ○ □ △)",pr_kbm:"Klavye ve fare (atadığınız tuşlar)",prompts_note:"Kaydettiğinizde oyun dosyalarına uygulanır (birkaç saniye sürebilir). Xbox seçilirse orijinal dosyalar geri yüklenir.",pr_busy:"Tuş simgeleri uygulanıyor…",pr_done:"Tuş simgeleri uygulandı",pr_error:"Tuş simgeleri uygulanamadı: ",kbm:"Klavye ve fare",
+  mouse_aim:"Fare ile nişan al",invert_y:"Dikey ekseni ters çevir",sens:"Fare hassasiyeti",kb_note:"Bir tuşa tıklayıp yeni tuşa veya fare düğmesine basın.",
+  kb_reset:"Önerilen FPS düzeni",conn_mode:"Bağlantı modu",offline:"Çevrimdışı",online_nobk:"Çevrimiçi — nobkonline.com",
+  srv_unknown:"Sunucu durumu bilinmiyor",check:"Kontrol et",username:"Kullanıcı adı",password:"Şifre",login:"Giriş yap",
+  register:"Hesap oluştur",signed_in:"Giriş yapıldı",my_account:"Hesabım",logout:"Çıkış yap",room:"Oda adı (sunucu kuran)",
+  api:"Sunucu adresi (API)",online_note:"Oyun içi çok oyunculu desteği geliştirme aşamasındadır.",save:"Ayarları kaydet",
+  defaults:"Varsayılanlara dön",logs:"Logları aç",game_dir:"Oyun klasörü",play:"OYNA",ready:"Oynamaya hazır",
+  not_ready_exe:"Oyun henüz kurulmadı — \"Oyunu kur\" butonuna basın",install:"Oyunu kur (bir kez)",not_ready_data:"Oyun dosyaları bulunamadı",saved:"Ayarlar kaydedildi",restored:"Varsayılan ayarlar yüklendi",
+  v_ok:"Oyun dosyaları tamam — {n} dosya",v_folder_missing:"Klasör bulunamadı",v_xex_missing:"default.xex bulunamadı",
+  v_data_missing:"Oyun veri klasörü (dist) eksik",press_key:"Bir tuşa basın…",checking:"Kontrol ediliyor…",
+  srv_on:"Sunucu çevrimiçi — {p} oyuncu, {r} oda",srv_off:"Sunucuya ulaşılamıyor",logging_in:"Giriş yapılıyor…",
+  err_network_error:"Sunucuya bağlanılamadı",err_invalid_credentials:"Kullanıcı adı veya şifre hatalı",err_api_https_required:"Sunucu adresi https:// ile başlamalı",
+  err_api_invalid:"Sunucu adresi geçersiz",err_bad_response:"Sunucudan beklenmeyen yanıt",err_log_missing:"Henüz log dosyası yok",
+  err_exe_missing:"bfbc.exe bulunamadı",fill_login:"Kullanıcı adı ve şifre girin",
+  ach_none:"Başarım bilgisi bulunamadı.",ach_howto:"Oluşturmak için oyun klasöründe şu komutu bir kez çalıştırın:",
+  unlocked:"Açıldı",locked:"Kilitli",ach_unlocked:"açılan başarım",ach_gs:"gamerscore",
+  a_rt:"Ateş et (RT)",a_lt:"Nişan al (LT)",a_a:"Zıpla (A)",a_b:"Araca bin / in, etkileşim (B)",a_x:"Şarjör değiştir (X)",a_y:"Yakın dövüş / bıçak (Y)",
+  a_lb:"Eşya değiştir: şırınga, tamir aleti… (LB)",a_rb:"Ana silah ↔ bomba atar (RB)",a_ls:"Koş (L3)",a_rs:"Eğil (R3)",a_fw:"İleri",a_bk:"Geri",a_lf:"Sol",a_rt2:"Sağ",
+  a_lu:"Bak: yukarı",a_ld:"Bak: aşağı",a_ll:"Bak: sol",a_lr:"Bak: sağ",a_du:"D-pad yukarı",a_dd:"D-pad aşağı",a_dl:"D-pad sol",a_dr:"D-pad sağ",
+  a_back:"Harita / skor (Back)",a_start:"Duraklat (Start)"},
+ en:{subtitle:"PC RECOMPILATION",tab_general:"General",tab_graphics:"Graphics",tab_advanced:"Advanced",tab_audio:"Audio",tab_controls:"Controls",
+  tab_online:"Online",tab_achievements:"Achievements",game_folder:"Game files folder",browse:"Browse",verify:"Verify game files",
+  launcher_lang:"Launcher language",game_lang:"Game language",close_on_launch:"Close launcher when the game starts",open_saves:"Open save folder",
+  open_launcher:"Open launcher folder",open_logs_dir:"Open logs folder",gpu:"Graphics adapter",gpu_auto:"Automatic (Windows decides)",internal_res:"Internal resolution",monitor:"Monitor",aniso:"Texture filtering",
+  game_default:"Game default",off:"Off",display_mode:"Display mode",windowed:"Windowed",borderless:"Borderless",
+  exclusive:"Exclusive fullscreen",window_size:"Window size",readback:"Light / exposure readback",rb_fast:"Fast (recommended)",rb_some:"Balanced",
+  rb_full:"Accurate (slow)",rb_none:"Off (image gets dark)",readback_note:"Required for the game's auto exposure. Turning it off makes the image very dark.",
+  msaa:"Native 2× MSAA",letterbox:"Letterbox (keep 16:9)",shader_cache:"Shader cache",dither:"Reduce color banding",
+  async:"Async shader compilation",fov:"Field of view (FOV)",weapon_size:"Weapon size",motion_blur:"Motion blur",soon:"SOON",
+  skip_intros:"Skip intros",skip_intros_note:"Skips the startup logo movies. Note: level intro movies may be skipped too.",err_game_cfg_failed:"Could not write the game settings file",game_settings:"Game settings",film_grain:"Film grain",auto_aim:"Aim assist",auto_aim_note:"Recommended off when playing with a mouse.",debug_log:"Extended diagnostics (verbose log)",debug_note:"Enable when reporting issues. May slow the game slightly.",
+  audio_buffer:"Audio buffer",ab_low:"8 — low latency",ab_mid:"16 — recommended",ab_high:"32 — least crackling",
+  audio_note:"Increase if you hear crackling during menu transitions.",mute:"Mute game audio",controller:"Controller",hdr_compat:"HDR compatibility mode (white explosions / blue smoke fix)",sprint_zoom:"Zoom while sprinting (original game effect)",weapon_keys:"Select weapons with keys 1-5",weapon_keys_note:"1 main weapon · 2 grenade launcher / grenade · 3 knife · 4 and 5 = 1st and 2nd item of the E cycle (syringe, repair tool, RPG… depending on kit). Other actions bound to these keys are disabled.",veh_sens:"Vehicle weapon sensitivity",zoom_sens:"Aiming / scope sensitivity",tank_speed:"Tank turret traverse speed",tank_note:"100% = original game. Enemy tanks turn at the same speed.",full_res_fx:"Draw smoke and dust at full resolution (blue smoke fix)",rt_path:"Render path",rt_rtv:"RTV — fast (recommended)",rt_rov:"ROV — most accurate colours, slower",rt_note:"Try ROV if explosion marks or smoke look blue/black.",fov_note:"On-screen horizontal angle (16:9). Game default is 61°. Applied to every level file when you save; the first time can take 1-2 minutes.",fov_busy:"Applying FOV / weapon size… ",fov_done:"FOV / weapon size applied",fov_error:"Could not apply FOV: ",shadow_dist:"Shadow distance",sd_default:"Game default (100 m)",sd_far:"Far (150 m)",sd_ultra:"Very far (200 m)",sd_note:"Also shows shadows of distant objects. Needs more GPU power.",prompts:"In-game button prompts",pr_xbox:"Xbox (A B X Y)",pr_ps:"PlayStation (✕ ○ □ △)",pr_kbm:"Keyboard & mouse (your bindings)",prompts_note:"Applied to the game files when you save (may take a few seconds). Choosing Xbox restores the original files.",pr_busy:"Applying button prompts…",pr_done:"Button prompts applied",pr_error:"Could not apply button prompts: ",kbm:"Keyboard & mouse",
+  mouse_aim:"Aim with mouse",invert_y:"Invert vertical axis",sens:"Mouse sensitivity",kb_note:"Click a binding, then press a key or mouse button.",
+  kb_reset:"Recommended FPS layout",conn_mode:"Connection mode",offline:"Offline",online_nobk:"Online — nobkonline.com",
+  srv_unknown:"Server status unknown",check:"Check",username:"Username",password:"Password",login:"Sign in",
+  register:"Create account",signed_in:"Signed in as",my_account:"My account",logout:"Sign out",room:"Room name (host)",
+  api:"Server address (API)",online_note:"In-game multiplayer support is in development.",save:"Save settings",
+  defaults:"Restore defaults",logs:"Open logs",game_dir:"Game folder",play:"PLAY",ready:"Ready to play",
+  not_ready_exe:"Game not built yet — press \"Install game\"",install:"Install game (once)",not_ready_data:"Game files not found",saved:"Settings saved",restored:"Defaults restored",
+  v_ok:"Game files OK — {n} files",v_folder_missing:"Folder not found",v_xex_missing:"default.xex not found",
+  v_data_missing:"Game data folder (dist) missing",press_key:"Press a key…",checking:"Checking…",
+  srv_on:"Server online — {p} players, {r} rooms",srv_off:"Server unreachable",logging_in:"Signing in…",
+  err_network_error:"Could not reach the server",err_invalid_credentials:"Wrong username or password",err_api_https_required:"Server address must start with https://",
+  err_api_invalid:"Invalid server address",err_bad_response:"Unexpected server response",err_log_missing:"No log file yet",
+  err_exe_missing:"bfbc.exe not found",fill_login:"Enter username and password",
+  ach_none:"No achievement data found.",ach_howto:"To generate it, run this once in the game folder:",
+  unlocked:"Unlocked",locked:"Locked",ach_unlocked:"unlocked",ach_gs:"gamerscore",
+  a_rt:"Fire (RT)",a_lt:"Aim (LT)",a_a:"Jump (A)",a_b:"Enter / exit vehicle, interact (B)",a_x:"Reload (X)",a_y:"Melee / knife (Y)",
+  a_lb:"Switch item: syringe, repair tool… (LB)",a_rb:"Main weapon ↔ grenade launcher (RB)",a_ls:"Sprint (L3)",a_rs:"Crouch (R3)",a_fw:"Forward",a_bk:"Back",a_lf:"Left",a_rt2:"Right",
+  a_lu:"Look up",a_ld:"Look down",a_ll:"Look left",a_lr:"Look right",a_du:"D-pad up",a_dd:"D-pad down",a_dl:"D-pad left",a_dr:"D-pad right",
+  a_back:"Map / score (Back)",a_start:"Pause (Start)"}
+};
+const KEYBINDS = [
+ ["keybind_right_trigger","a_rt"],["keybind_left_trigger","a_lt"],["keybind_a","a_a"],["keybind_b","a_b"],["keybind_x","a_x"],
+ ["keybind_y","a_y"],["keybind_left_shoulder","a_lb"],["keybind_right_shoulder","a_rb"],["keybind_lstick_press","a_ls"],
+ ["keybind_rstick_press","a_rs"],["keybind_lstick_up","a_fw"],["keybind_lstick_down","a_bk"],["keybind_lstick_left","a_lf"],
+ ["keybind_lstick_right","a_rt2"],["keybind_rstick_up","a_lu"],["keybind_rstick_down","a_ld"],["keybind_rstick_left","a_ll"],
+ ["keybind_rstick_right","a_lr"],["keybind_dpad_up","a_du"],["keybind_dpad_down","a_dd"],["keybind_dpad_left","a_dl"],
+ ["keybind_dpad_right","a_dr"],["keybind_back","a_back"],["keybind_start","a_start"]];
+const KB_DEFAULT = {keybind_right_trigger:"LMB",keybind_left_trigger:"RMB",keybind_a:"Space",keybind_b:"E",keybind_x:"R",keybind_y:"V",
+ keybind_left_shoulder:"Q",keybind_right_shoulder:"G",keybind_lstick_press:"Shift",keybind_rstick_press:"Control",keybind_lstick_up:"W",
+ keybind_lstick_down:"S",keybind_lstick_left:"A",keybind_lstick_right:"D",keybind_rstick_up:"Up",keybind_rstick_down:"Down",
+ keybind_rstick_left:"Left",keybind_rstick_right:"Right",keybind_dpad_up:"1",keybind_dpad_down:"2",keybind_dpad_left:"3",
+ keybind_dpad_right:"4",keybind_back:"Tab",keybind_start:"Escape"};
+
+let S = null, lang = "en";
+const $ = s => document.querySelector(s), $$ = s => [...document.querySelectorAll(s)];
+const t = (k, v) => { let s = (I18N[lang] && I18N[lang][k]) || I18N.tr[k] || k; if (v) for (const x in v) s = s.replace("{"+x+"}", v[x]); return s; };
+function toast(msg){ const e=$("#toast"); e.textContent=msg; e.classList.add("show"); clearTimeout(e._t); e._t=setTimeout(()=>e.classList.remove("show"),2200); }
+function errText(e){ const k="err_"+String(e); return (I18N[lang][k]||I18N.tr[k]) ? t(k) : String(e); }
+
+function applyI18n(){
+  document.documentElement.lang = lang;
+  $$("[data-i18n]").forEach(e => e.textContent = t(e.dataset.i18n));
+  renderKeys(); updateReady();
+}
+
+// ---- tabs
+$$("#tabs button").forEach(b => b.onclick = () => {
+  $$("#tabs button").forEach(x => x.classList.toggle("active", x===b));
+  $$("main section").forEach(s => s.classList.toggle("active", s.id===b.dataset.tab));
+  if (b.dataset.tab==="achievements") loadAch();
+});
+
+// ---- state <-> form
+function fillForm(){
+  lang = S.lang || "en"; $("#lang").value = lang;
+  $("#game_data").value = S.game_data; $("#close_on_launch").checked = S.close_on_launch;
+  $("#mode").value = S.connection_mode;
+  $("#ver").textContent = S.version;
+  fillGpus();
+  const mon = $("#monitor"); mon.innerHTML = ""; mon.add(new Option(lang==="tr"?"Otomatik":"Automatic","0"));
+  S.monitors.forEach((m,i) => mon.add(new Option((i+1)+" — "+m, String(i+1))));
+  $$("[data-cvar]").forEach(e => {
+    const v = S.cvars[e.dataset.cvar]; if (v===undefined) return;
+    if (e.type==="checkbox") e.checked = v==="true"; else e.value = v;
+  });
+  const c = S.cvars;
+  $("#display_mode").value = c.fullscreen!=="true" ? "window" : (c.fullscreen_exclusive==="true" ? "exclusive" : "borderless");
+  $("#window_size").value = c.window_width+"x"+c.window_height;
+  if (!$("#window_size").value) $("#window_size").value = "1280x720";
+  $("#debug_log").checked = c.log_level==="debug";
+  $("#auto_aim").checked = S.auto_aim !== false; $("#motion_blur").checked = S.motion_blur !== false; $("#film_grain").checked = S.film_grain !== false; $("#full_res_fx").checked = S.full_res_fx !== false; $("#sprint_zoom").checked = !!S.sprint_zoom; $("#hdr_compat").checked = S.hdr_compat !== false;
+  $("#button_prompts").value = S.button_prompts || "xbox";
+  $("#shadow_distance").value = S.shadow_distance || "default";
+  $("#fov_h").value = S.fov_h || 61; $("#weapon_size").value = S.weapon_size || 100; $("#tank_speed").value = S.tank_speed || 100;
+  syncUI(); setAccount(S.logged_in, S.username); applyI18n();
+}
+function fillGpus(){
+  const gpu = $("#gpu"); gpu.innerHTML = "";
+  gpu.add(new Option(t("gpu_auto"), "0"));
+  const multi = S.gpus.length > 1;
+  S.gpus.forEach(g => gpu.add(new Option(g.name, multi ? String(g.pref) : "0")));
+  gpu.value = String(S.gpu_preference || 0);
+  if (gpu.selectedIndex < 0) gpu.value = "0";
+}
+function collect(){
+  const cv = Object.assign({}, S.cvars);
+  $$("[data-cvar]").forEach(e => { cv[e.dataset.cvar] = e.type==="checkbox" ? String(e.checked) : String(e.value); });
+  const dm = $("#display_mode").value;
+  cv.fullscreen = String(dm!=="window"); cv.fullscreen_exclusive = String(dm==="exclusive");
+  const [w,h] = $("#window_size").value.split("x"); cv.window_width=w; cv.window_height=h;
+  cv.log_level = $("#debug_log").checked ? "debug" : "info";
+  S.cvars = cv;
+  return { lang, game_data:$("#game_data").value.trim(), close_on_launch:$("#close_on_launch").checked,
+    connection_mode:$("#mode").value, gpu_preference:Number($("#gpu").value)||0, auto_aim:$("#auto_aim").checked, motion_blur:$("#motion_blur").checked, film_grain:$("#film_grain").checked, full_res_fx:$("#full_res_fx").checked, sprint_zoom:$("#sprint_zoom").checked, hdr_compat:$("#hdr_compat").checked, button_prompts:$("#button_prompts").value, shadow_distance:$("#shadow_distance").value, fov_h:Number($("#fov_h").value), weapon_size:Number($("#weapon_size").value), tank_speed:Number($("#tank_speed").value), api_base:S.api_base, room_name:S.room_name, cvars:cv };
+}
+async function save(silent){
+  try { await goSave(collect()); if(!silent) toast(t("saved")); } catch(e){ toast(errText(e)); throw e; }
+}
+function syncUI(){
+  $("#window_size").disabled = $("#display_mode").value!=="window";
+  $("#sens_val").textContent = Number($("#sens").value).toFixed(1)+"×";
+  $("#vsens_val").textContent = Number($("#vsens").value).toFixed(1)+"×";
+  $("#zsens_val").textContent = Number($("#zsens").value).toFixed(2)+"×";
+  $("#tank_val").textContent = $("#tank_speed").value+"%";
+  $("#fov_val").textContent = $("#fov_h").value+"°"; $("#ws_val").textContent = $("#weapon_size").value+"%";
+}
+$("#display_mode").onchange = syncUI; $("#sens").oninput = syncUI; $("#fov_h").oninput = syncUI; $("#vsens").oninput = syncUI; $("#zsens").oninput = syncUI; $("#tank_speed").oninput = syncUI; $("#weapon_size").oninput = syncUI;
+$("#lang").onchange = () => { lang = $("#lang").value; fillMonitorsLabel(); const g=$("#gpu").value; fillGpus(); $("#gpu").value=g; applyI18n(); save(true); };
+function fillMonitorsLabel(){ const o=$("#monitor").options[0]; if(o) o.text = lang==="tr"?"Otomatik":"Automatic"; }
+
+// ---- ready status
+function updateReady(){
+  const dot=$("#ready_dot"), txt=$("#ready_text"), play=$("#play");
+  let ok = S && S.exe_found && S.game_valid;
+  dot.className = "dot " + (ok?"on":"off");
+  txt.textContent = !S ? "" : !S.exe_found ? t("not_ready_exe") : !S.game_valid ? t("not_ready_data") : t("ready");
+  play.disabled = !ok;
+  // No game build yet but the game files are in place: offer the one-time install.
+  const inst=$("#install");
+  if (inst) inst.style.display = (S && !S.exe_found && S.game_valid) ? "" : "none";
+}
+
+// ---- general
+$("#install").onclick = async () => { const r = await goInstall(); if (r) alert(r); };
+$("#browse").onclick = async () => { const p = await goBrowse(t("game_folder")); if (p) { $("#game_data").value = p; await verify(); } };
+async function verify(){
+  const r = await goVerify($("#game_data").value.trim());
+  const e = $("#verify_res"); e.className = "res " + (r.ok?"ok":"bad");
+  e.textContent = r.ok ? t("v_ok",{n:r.files}) : t("v_"+r.message);
+  S.game_valid = r.ok; S.game_data = $("#game_data").value.trim(); updateReady();
+  if (r.ok) save(true);
+}
+$("#verify").onclick = verify;
+$$("[data-folder]").forEach(b => b.onclick = () => goOpenFolder(b.dataset.folder).catch(e=>toast(errText(e))));
+
+// ---- keybinds
+let waiting = null;
+const CODE = {Space:"Space",Enter:"Return",Escape:"Escape",Tab:"Tab",Backspace:"Backspace",ShiftLeft:"Shift",ShiftRight:"Shift",
+ ControlLeft:"Control",ControlRight:"Control",AltLeft:"Alt",AltRight:"Alt",ArrowUp:"Up",ArrowDown:"Down",ArrowLeft:"Left",ArrowRight:"Right",
+ Minus:"Minus",Equal:"Plus",Comma:"Comma",Period:"Period",Semicolon:"Semicolon",Slash:"Slash",Backslash:"Backslash",BracketLeft:"LBracket",
+ BracketRight:"RBracket",Quote:"Quote",Backquote:"Backtick",Delete:"Delete",Insert:"Insert",Home:"Home",End:"End",PageUp:"PageUp",
+ PageDown:"PageDown",NumpadEnter:"NumpadEnter",NumpadAdd:"NumpadPlus",NumpadSubtract:"NumpadMinus",NumpadMultiply:"NumpadStar",
+ NumpadDivide:"NumpadSlash",CapsLock:"CapsLock"};
+function codeToName(code){
+  if (CODE[code]) return CODE[code];
+  let m;
+  if ((m = code.match(/^Key([A-Z])$/))) return m[1];
+  if ((m = code.match(/^Digit(\d)$/))) return m[1];
+  if ((m = code.match(/^Numpad(\d)$/))) return "Numpad"+m[1];
+  if ((m = code.match(/^F(\d{1,2})$/))) return "F"+m[1];
+  return null;
+}
+const PRETTY = {LMB:"🖱 Sol tık",RMB:"🖱 Sağ tık",MMB:"🖱 Orta tık"}, PRETTY_EN = {LMB:"🖱 Left click",RMB:"🖱 Right click",MMB:"🖱 Middle click"};
+function pretty(v){ const p=(lang==="tr"?PRETTY:PRETTY_EN)[v]; return p || v || "—"; }
+function renderKeys(){
+  const box = $("#keys"); if (!box || !S) return; box.innerHTML = "";
+  KEYBINDS.forEach(([cv,label]) => {
+    const l = document.createElement("div"); l.textContent = t(label);
+    const k = document.createElement("div"); k.className = "k"; k.dataset.cv = cv; k.textContent = pretty(S.cvars[cv]);
+    k.onclick = ev => { ev.stopPropagation(); startWait(k); };
+    box.append(l, k);
+  });
+}
+function startWait(k){ if (waiting) waiting.classList.remove("wait"); waiting = k; k.classList.add("wait"); k.textContent = t("press_key"); }
+function finishWait(name){
+  if (!waiting) return; const cv = waiting.dataset.cv;
+  if (name) S.cvars[cv] = name;
+  waiting.classList.remove("wait"); waiting = null; renderKeys();
+}
+window.addEventListener("keydown", e => { if (!waiting) return; e.preventDefault(); const n = codeToName(e.code); if (n) finishWait(n); }, true);
+let swallowClick = false;
+window.addEventListener("mousedown", e => {
+  if (!waiting) return;
+  e.preventDefault(); e.stopPropagation(); swallowClick = true;
+  finishWait(["LMB","MMB","RMB"][e.button] || null);
+}, true);
+window.addEventListener("click", e => { if (swallowClick) { swallowClick = false; e.preventDefault(); e.stopPropagation(); } }, true);
+window.addEventListener("auxclick", e => { if (swallowClick) { swallowClick = false; e.preventDefault(); e.stopPropagation(); } }, true);
+window.addEventListener("contextmenu", e => e.preventDefault());
+$("#kb_reset").onclick = () => { Object.assign(S.cvars, KB_DEFAULT); renderKeys(); };
+
+// ---- online
+function setAccount(logged, name){
+  $("#login_box").style.display = logged ? "none" : "";
+  $("#account_box").style.display = logged ? "" : "none";
+  $("#acc_name").textContent = name || "";
+}
+$("#login").onclick = async () => {
+  const u = $("#l_user").value.trim(), p = $("#l_pass").value;
+  const r = $("#login_res");
+  if (!u || !p) { r.className="res bad"; r.textContent=t("fill_login"); return; }
+  await save(true);
+  r.className = "res"; r.textContent = t("logging_in"); $("#login").disabled = true;
+  goLogin(u, p);
+};
+window.onPrompts = r => {
+  if (r.state==="busy") { const e=$("#toast"); e.textContent=t("pr_busy"); e.classList.add("show"); clearTimeout(e._t); }
+  else if (r.state==="done") toast(t("pr_done"));
+  else toast(t("pr_error")+(r.error||""));
+};
+window.onFovProgress = r => {
+  const e=$("#toast");
+  if (r.error) { toast(t("fov_error")+r.error); return; }
+  if (r.done) { toast(t("fov_done")); return; }
+  e.textContent=t("fov_busy")+"("+r.i+"/"+r.n+")"; e.classList.add("show"); clearTimeout(e._t);
+};
+window.onPlayError = r => { toast(errText(r.error)); updateReady(); };
+window.onLoginResult = res => {
+  $("#login").disabled = false; $("#l_pass").value = "";
+  const r = $("#login_res");
+  if (res.ok) { r.textContent = ""; S.logged_in = true; S.username = res.username; setAccount(true, res.display_name || res.username); }
+  else { r.className = "res bad"; r.textContent = errText(res.error); }
+};
+$("#logout").onclick = async () => { await goLogout(); S.logged_in=false; setAccount(false); };
+const site = () => { try { return new URL(S.api_base).origin; } catch { return "https://nobkonline.com"; } };
+$("#register").onclick = () => goOpenURL(site() + "/register").catch(e=>toast(errText(e)));
+$("#my_account").onclick = () => goOpenURL(site() + "/account").catch(e=>toast(errText(e)));
+$("#srv_check").onclick = async () => { await save(true); $("#srv_text").textContent = t("checking"); $("#srv_dot").className="dot"; goServerStatus(); };
+window.onServerStatus = res => {
+  const d = $("#srv_dot"), x = $("#srv_text");
+  if (res.ok && res.status.online) { d.className="dot on"; x.textContent = t("srv_on",{p:res.status.players||0, r:res.status.rooms||0}) + (res.status.motd ? " · "+res.status.motd : ""); }
+  else { d.className="dot off"; x.textContent = t("srv_off"); }
+};
+
+// ---- achievements
+async function loadAch(){
+  const body = $("#ach_body"); body.innerHTML = "";
+  let r; try { r = await goAchievements(); } catch(e) { body.textContent = errText(e); return; }
+  if (!r.found) {
+    body.innerHTML = `<div class="note" style="font-size:13.5px">${t("ach_none")}<br><br>${t("ach_howto")}</div>
+      <div style="margin-top:10px"><code>rexglue.exe init achievements assets\\default.xex metadata</code></div>`;
+    return;
+  }
+  const head = document.createElement("div"); head.className = "ach-head";
+  head.innerHTML = `<div><b>${r.unlocked_count} / ${r.total}</b><br>${t("ach_unlocked")}</div><div><b>${r.gamerscore} / ${r.gamerscore_max}</b><br>${t("ach_gs")}</div>`;
+  body.append(head);
+  r.items.sort((a,b) => (b.unlocked - a.unlocked) || (a.id - b.id)).forEach(a => {
+    const el = document.createElement("div"); el.className = "ach" + (a.unlocked ? "" : " locked");
+    const img = a.icon ? Object.assign(document.createElement("img"), {src:a.icon}) : Object.assign(document.createElement("div"), {className:"ph"});
+    const txt = document.createElement("div");
+    const n = document.createElement("div"); n.className="n"; n.textContent = a.label;
+    const d = document.createElement("div"); d.className="d"; d.textContent = a.unlocked ? a.description : (a.unachieved || a.description);
+    txt.append(n, d);
+    const g = document.createElement("div"); g.className = "g";
+    g.innerHTML = `${a.gamerscore} G<small></small>`; g.querySelector("small").textContent = a.unlocked ? (a.unlocked_at || t("unlocked")) : t("locked");
+    el.append(img, txt, g); body.append(el);
+  });
+}
+
+// ---- footer
+$("#save").onclick = () => save(false);
+$("#defaults").onclick = async () => { S = await goRestoreDefaults(); fillForm(); toast(t("restored")); };
+$("#logs").onclick = () => goOpenLogs().catch(e => toast(errText(e)));
+$("#play").onclick = async () => {
+  try { await save(true); $("#play").disabled = true; await goPlay(); setTimeout(()=>updateReady(), 4000); }
+  catch(e) { toast(errText(e)); updateReady(); }
+};
+
+// ---- init
+(async () => {
+  try { const bg = await goBackground(); if (bg) $("#bg").style.backgroundImage = `url(${bg})`; } catch {}
+  try { $("#logo").src = await goLogo(); } catch {}
+  S = await goGetState(); fillForm();
+})();
+</script>
+</body>
+</html>

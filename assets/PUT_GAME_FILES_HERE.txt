@@ -1,0 +1,1 @@
+Put the files extracted from your own game disc here (default.xex and the dist folder).

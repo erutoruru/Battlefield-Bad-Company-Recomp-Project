@@ -1,0 +1,17 @@
+# Game files: never commit (supplied by each player)
+assets/*
+!assets/PUT_GAME_FILES_HERE.txt
+
+# Generated from default.xex by rexglue codegen (translated game code)
+generated/
+metadata/
+image_dump.bin
+
+# Build output, SDK, logs, user data
+out/
+tools/rexglue/
+logs/
+*.exe
+*.pdb
+launcher.json
+bfbc.toml
