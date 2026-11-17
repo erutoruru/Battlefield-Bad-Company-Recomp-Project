@@ -8,6 +8,7 @@ A PC port of Battlefield: Bad Company (Xbox 360, 2008, Title ID `454107F9`), sta
 
 ## Installation (players)
 
+0. The game must be the USA version; other versions are not supported. 0.0.0.6
 1. Download the latest ZIP from **Releases** and extract it to a folder (e.g. `C:\BadCompany`).
 2. Put the files extracted from your game disc into the **`assets`** folder, so that `assets\default.xex` and `assets\dist\...` exist.
 3. Run **`BadCompanyLauncher.exe`**.
