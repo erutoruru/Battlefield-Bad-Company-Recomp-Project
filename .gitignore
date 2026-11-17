@@ -2,8 +2,10 @@
 assets/*
 !assets/PUT_GAME_FILES_HERE.txt
 
-# Generated from default.xex by rexglue codegen (translated game code)
-generated/
+# Generated from default.xex by rexglue codegen (translated game code).
+# generated/rexglue.cmake is SDK boilerplate (no game code) and is committed.
+generated/*
+!generated/rexglue.cmake
 metadata/
 image_dump.bin
 
