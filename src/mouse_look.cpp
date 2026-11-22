@@ -62,6 +62,8 @@ REXCVAR_DEFINE_UINT32(bfbc_mod_shift, 0, "BFBC",
                       "Gamepad buttons pressed while Shift is held (XInput mask, 0x10000=LT, 0x20000=RT)");
 REXCVAR_DEFINE_UINT32(bfbc_mod_ctrl, 0, "BFBC", "Gamepad buttons pressed while Ctrl is held");
 REXCVAR_DEFINE_UINT32(bfbc_mod_alt, 0, "BFBC", "Gamepad buttons pressed while Alt is held");
+REXCVAR_DEFINE_UINT32(bfbc_mod_mouse4, 0, "BFBC", "Gamepad buttons pressed while mouse button 4 (back) is held");
+REXCVAR_DEFINE_UINT32(bfbc_mod_mouse5, 0, "BFBC", "Gamepad buttons pressed while mouse button 5 (forward) is held");
 
 extern "C" REX_FUNC(__imp__sub_8227DE90);
 extern "C" REX_FUNC(__imp__sub_82181878);
@@ -559,6 +561,9 @@ REX_HOOK_RAW(sub_82181878) {
   if (REXCVAR_GET(bfbc_mod_shift) && KeyHeld(0x10)) mask |= REXCVAR_GET(bfbc_mod_shift);
   if (REXCVAR_GET(bfbc_mod_ctrl) && KeyHeld(0x11)) mask |= REXCVAR_GET(bfbc_mod_ctrl);
   if (REXCVAR_GET(bfbc_mod_alt) && KeyHeld(0x12)) mask |= REXCVAR_GET(bfbc_mod_alt);
+  // Mouse side buttons (VK_XBUTTON1/2): ReXGlue's keybinds only know LMB/RMB/MMB.
+  if (REXCVAR_GET(bfbc_mod_mouse4) && KeyHeld(0x05)) mask |= REXCVAR_GET(bfbc_mod_mouse4);
+  if (REXCVAR_GET(bfbc_mod_mouse5) && KeyHeld(0x06)) mask |= REXCVAR_GET(bfbc_mod_mouse5);
   if (mask) {
     uint8_t* p = GuestPtr(base, ctx.r4.u32);
     uint16_t buttons = uint16_t((p[0] << 8) | p[1]);

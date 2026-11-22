@@ -22,7 +22,7 @@ import (
 	webview2 "github.com/jchv/go-webview2"
 )
 
-const launcherVersion = "1.3.9"
+const launcherVersion = "1.4.0"
 const titleID = "454107F9"
 
 //go:embed ui.html
@@ -66,6 +66,7 @@ type Settings struct {
 	FovH           int               `json:"fov_h"`                // horizontal FOV at 16:9, 0 = game default
 	WeaponSize     int               `json:"weapon_size"`          // percent, 0/100 = game default
 	TankSpeed      int               `json:"tank_speed"`           // heavy turret traverse, percent, 0/100 = game default
+	AdsOriginal    bool              `json:"ads_original"`         // keep the game's aiming FOVs (no scaling with FovH)
 	Cvars          map[string]string `json:"cvars"`
 }
 
@@ -304,6 +305,7 @@ type State struct {
 	FovH           int               `json:"fov_h"`
 	WeaponSize     int               `json:"weapon_size"`
 	TankSpeed      int               `json:"tank_speed"`
+	AdsOriginal    bool              `json:"ads_original"`
 }
 
 func getState() State {
@@ -337,6 +339,7 @@ func getState() State {
 		FovH:           settings.FovH,
 		WeaponSize:     settings.WeaponSize,
 		TankSpeed:      settings.TankSpeed,
+		AdsOriginal:    settings.AdsOriginal,
 	}
 }
 
@@ -360,6 +363,7 @@ type SavePayload struct {
 	FovH           int               `json:"fov_h"`
 	WeaponSize     int               `json:"weapon_size"`
 	TankSpeed      int               `json:"tank_speed"`
+	AdsOriginal    bool              `json:"ads_original"`
 	Cvars          map[string]string `json:"cvars"`
 }
 
@@ -404,6 +408,7 @@ func saveSettings(p SavePayload) error {
 	} else {
 		settings.WeaponSize = 0
 	}
+	settings.AdsOriginal = p.AdsOriginal
 	if p.TankSpeed > 100 && p.TankSpeed <= 400 {
 		settings.TankSpeed = p.TankSpeed
 	} else {
@@ -529,6 +534,7 @@ type assetJob struct {
 	slots      bool // weapon slot keys 1-5
 	sprintZoom bool // keep the game's zoom while sprinting
 	tankSpeed  int  // heavy turret traverse percent (0 = original)
+	adsScale   bool // scale aiming FOVs with the chosen FOV
 }
 
 func snapshotAssetJob() assetJob {
@@ -552,10 +558,11 @@ func snapshotAssetJob() assetJob {
 	// any earlier patch is restored from the backup.
 	slots := false
 	return assetJob{settings.GameData, normalizePromptMode(settings.ButtonPrompts), binds, vfov, rfov, linear, slots,
-		settings.SprintZoom, settings.TankSpeed}
+		settings.SprintZoom, settings.TankSpeed, !settings.AdsOriginal}
 }
 
 func (j assetJob) upToDate() bool {
+	adsScaleOn = j.adsScale
 	return promptsUpToDate(j.gameData, j.mode, j.binds) && fovUpToDate(j.gameData, j.vfov, j.rfov, j.linear, j.slots, j.sprintZoom, j.tankSpeed)
 }
 
@@ -573,6 +580,7 @@ func runAssetJob(j assetJob) {
 			evalJS("onPrompts", map[string]string{"state": "done"})
 		}
 	}
+	adsScaleOn = j.adsScale
 	if !fovUpToDate(j.gameData, j.vfov, j.rfov, j.linear, j.slots, j.sprintZoom, j.tankSpeed) {
 		err := applyFov(j.gameData, j.vfov, j.rfov, j.linear, j.slots, j.sprintZoom, j.tankSpeed, func(i, n int) {
 			evalJS("onFovProgress", map[string]int{"i": i + 1, "n": n})
@@ -744,7 +752,8 @@ var keybindMask = map[string]uint32{
 // emulation (where a lone modifier never triggers and blocks all other keys while
 // held) into bfbc_mod_* cvars handled by mouse_look.cpp.
 func applyModifierBinds(all map[string]string) {
-	mods := map[string]uint32{"Shift": 0, "Control": 0, "Alt": 0}
+	// MB4/MB5 (mouse side buttons) are unknown to ReXGlue and handled the same way.
+	mods := map[string]uint32{"Shift": 0, "Control": 0, "Alt": 0, "MB4": 0, "MB5": 0}
 	for cv, mask := range keybindMask {
 		v := strings.TrimSpace(all[cv])
 		if _, isMod := mods[v]; isMod {
@@ -755,6 +764,8 @@ func applyModifierBinds(all map[string]string) {
 	all["bfbc_mod_shift"] = fmt.Sprint(mods["Shift"])
 	all["bfbc_mod_ctrl"] = fmt.Sprint(mods["Control"])
 	all["bfbc_mod_alt"] = fmt.Sprint(mods["Alt"])
+	all["bfbc_mod_mouse4"] = fmt.Sprint(mods["MB4"])
+	all["bfbc_mod_mouse5"] = fmt.Sprint(mods["MB5"])
 }
 
 // fullResFx: draw particles (smoke, dust) at full resolution. The game's half

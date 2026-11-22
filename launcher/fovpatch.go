@@ -53,6 +53,7 @@ type fovState struct {
 	SlotKeys   bool    `json:"slot_keys"`
 	SprintZoom bool    `json:"sprint_zoom"`
 	TankSpeed  int     `json:"tank_speed,omitempty"`
+	AdsScale   bool    `json:"ads_scale,omitempty"`
 	// Original turret thresholds replaced for mouse aiming, by "level|entry|offset".
 	Turrets map[string]uint32 `json:"turrets,omitempty"`
 }
@@ -63,11 +64,11 @@ func fovUpToDate(gameData string, vfov, rfov float32, linear, slots, sprintZoom 
 	var st fovState
 	b, err := os.ReadFile(fovStatePath(gameData))
 	if err != nil {
-		return vfov == 0 && rfov == defaultRenderFov && !linear && !slots && sprintZoom && tankSpeed == 0
+		return vfov == 0 && rfov == defaultRenderFov && !linear && !slots && sprintZoom && tankSpeed == 0 && !adsScaleOn
 	}
 	return json.Unmarshal(b, &st) == nil && st.Version == fovStateVersion && st.VFov == vfov &&
 		st.RenderFov == rfov && st.LinearAim == linear && st.SlotKeys == slots && st.SprintZoom == sprintZoom &&
-		st.TankSpeed == tankSpeed
+		st.TankSpeed == tankSpeed && st.AdsScale == adsScaleOn
 }
 
 // applyFov patches every level archive. progress(i, n) is called per archive.
@@ -112,7 +113,7 @@ func applyFov(gameData string, vfov, rfov float32, linear, slots, sprintZoom boo
 		}
 	}
 	b, _ := json.Marshal(fovState{Version: fovStateVersion, VFov: vfov, RenderFov: rfov, LinearAim: linear,
-		SlotKeys: slots, SprintZoom: sprintZoom, TankSpeed: tankSpeed, Turrets: turrets})
+		SlotKeys: slots, SprintZoom: sprintZoom, TankSpeed: tankSpeed, AdsScale: adsScaleOn, Turrets: turrets})
 	return os.WriteFile(fovStatePath(gameData), b, 0o644)
 }
 
@@ -185,6 +186,9 @@ func patchLevelFov(path, level string, vfov, rfov float32, linear, slots, sprint
 			changed = true
 		}
 		if bytes.Contains(b, []byte("ChildRotationBodyData")) && patchTurretThreshold(b, level+"|"+name, linear, turrets) {
+			changed = true
+		}
+		if bytes.Contains(b, []byte("ZoomLevels")) && patchAdsFov(b, level+"|"+name, real, defaultVFov*mult, mult, turrets) {
 			changed = true
 		}
 		if !bytes.Contains(b, []byte("RenderFov")) && !bytes.Contains(b, []byte("ZoomLevels")) &&
@@ -444,6 +448,64 @@ const tinyThreshold = 0.001
 
 // turretSpeedPct scales heavy turret torque (0 or 100 = original); set by applyFov.
 var turretSpeedPct int
+
+// adsScaleOn: scale aim-down-sights FOVs with the chosen FOV; set from the settings.
+var adsScaleOn bool
+
+// patchAdsFov scales the aiming zoom levels (ZoomLevels[1:]) so aiming magnifies
+// as much as in the original game relative to the hip FOV, instead of zooming
+// far more when the hip FOV is widened. Scaling is done on tan(fov/2), on the real
+// (InfantryFOVMultiplier-applied) angles. Sniper scopes (stored FOV < 20) keep
+// their fixed magnification. Originals are kept in orig and restored when off.
+func patchAdsFov(b []byte, key string, real, defaultReal, mult float32, orig map[string]uint32) bool {
+	root, err := parseDbx(b)
+	if err != nil {
+		return false
+	}
+	byGUID := map[string]*dbxNode{}
+	for _, in := range root.children {
+		byGUID[in.attrs["guid"]] = in
+	}
+	k := math.Tan(float64(real)*math.Pi/360) / math.Tan(float64(defaultReal)*math.Pi/360)
+	changed := false
+	for _, in := range root.children {
+		zl := in.field("ZoomLevels")
+		if zl == nil || zl.tag != "array" || len(zl.children) < 2 {
+			continue
+		}
+		for _, ref := range zl.children[1:] {
+			z := byGUID[ref.attrs["ref"]]
+			if z == nil {
+				continue
+			}
+			f := z.field("FieldOfView")
+			if f == nil || f.valOff < 0 || f.valLen != 4 {
+				continue
+			}
+			mk := fmt.Sprintf("%s|ads|%d", key, f.valOff)
+			cur := binary.BigEndian.Uint32(b[f.valOff:])
+			base := cur
+			if o, ok := orig[mk]; ok {
+				base = o
+			}
+			stored := math.Float32frombits(base)
+			want := base
+			if adsScaleOn && k != 1 && stored >= 20 && stored < 179 {
+				orig[mk] = base
+				r := float64(stored*mult) * math.Pi / 360
+				nr := 2 * math.Atan(math.Tan(r)*k) * 180 / math.Pi
+				want = math.Float32bits(float32(nr) / mult)
+			} else {
+				delete(orig, mk)
+			}
+			if cur != want {
+				binary.BigEndian.PutUint32(b[f.valOff:], want)
+				changed = true
+			}
+		}
+	}
+	return changed
+}
 
 func patchTurretThreshold(b []byte, key string, linear bool, orig map[string]uint32) bool {
 	root, err := parseDbx(b)
