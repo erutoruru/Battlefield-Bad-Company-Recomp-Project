@@ -31,11 +31,11 @@ if (-not (Test-Path $xex)) {
     Fail "assets\default.xex not found. Put the files extracted from your own game disc into the 'assets' folder."
 }
 # The function list in bfbc_manifest.toml and the hooks in src/mouse_look.cpp are tied
-# to one executable: the Xbox 360 USA disc default.xex with the hash below.
+# to one executable: the Xbox 360 USA disc default.xex (version 0.0.0.8, media ID 75F7BA6A).
 $supportedXex = 'AE42F7CC30AB3217AF04F1C3C6A5DDB7E640D1E7DF73B32F2877905A7D4D2670'
 $xexHash = (Get-FileHash $xex -Algorithm SHA256).Hash
 if ($xexHash -ne $supportedXex) {
-    $msg = "Unsupported default.xex (SHA-256 $xexHash).`n       Only the Xbox 360 USA disc default.xex with SHA-256 $supportedXex is supported;`n       other versions (e.g. other regions / title updates) have different code and will not work."
+    $msg = "Unsupported default.xex (SHA-256 $xexHash).`n       Only the original Xbox 360 USA disc is supported (default.xex version 0.0.0.8, media ID 75F7BA6A,`n       SHA-256 $supportedXex).`n       Other versions (Platinum Hits, other regions, version 0.0.0.6) have different code and will not work."
     if ($AnyXex) { Write-Host "Warning: $msg" -ForegroundColor Yellow } else { Fail "$msg`n       (Run tools\install.ps1 -AnyXex to try anyway.)" }
 }
 if (-not (Test-Path (Join-Path $root 'assets\dist'))) {
@@ -102,7 +102,10 @@ function Get-SdkVersion($dir) {
     return ''
 }
 $wantVersion = $SdkTag.TrimStart('v')
-$candidates = @($SdkDir, $env:REXSDK, (Join-Path $root 'tools\rexglue\win-amd64'), 'C:\rexglue\win-amd64') |
+# A hand-extracted SDK anywhere under tools\rexglue counts too.
+$localSdk = Get-ChildItem (Join-Path $root 'tools\rexglue') -Recurse -Filter rexglue.exe -ErrorAction SilentlyContinue |
+    Select-Object -First 1 | ForEach-Object { Split-Path -Parent $_.DirectoryName }
+$candidates = @($SdkDir, $env:REXSDK, $localSdk, (Join-Path $root 'tools\rexglue\win-amd64'), 'C:\rexglue\win-amd64') |
     Where-Object { $_ -and (Test-Path (Join-Path $_ 'bin\rexglue.exe')) }
 $sdk = $null
 foreach ($c in $candidates) {
@@ -120,9 +123,18 @@ if (-not $sdk) {
     if (-not $asset) { Fail "No Windows SDK archive in ReXGlue release $($rel.tag_name)." }
     $zip = Join-Path $env:TEMP $asset.name
     Write-Host "Downloading: $($asset.name)"
-    Invoke-WebRequest $asset.browser_download_url -OutFile $zip
     $dest = Join-Path $root 'tools\rexglue'
-    Expand-Archive $zip -DestinationPath $dest -Force
+    try {
+        Invoke-WebRequest $asset.browser_download_url -OutFile $zip
+        Expand-Archive $zip -DestinationPath $dest -Force
+    } catch {
+        Fail ("Could not download or unpack the ReXGlue SDK: $($_.Exception.Message)`n" +
+              "       If Windows Defender blocked it (a false positive for this developer tool), either allow it in`n" +
+              "       Windows Security > Protection history, or install it by hand:`n" +
+              "         1. download $($asset.browser_download_url)`n" +
+              "         2. extract it into $dest (so that ...\bin\rexglue.exe is inside it)`n" +
+              "         3. run the install again.")
+    }
     $sdk = Get-ChildItem $dest -Recurse -Filter rexglue.exe | Select-Object -First 1 | ForEach-Object { Split-Path -Parent $_.DirectoryName }
     if (-not $sdk) { Fail "Could not unpack the SDK." }
 }

@@ -616,6 +616,18 @@ $("#play").onclick = async () => {
 };
 
 // ---- init
+// Show the interface in the default language right away, even before (or if never)
+// the launcher state arrives.
+applyI18n();
+// After "Install game" finishes in its own window, pick up the new bfbc.exe without
+// a launcher restart.
+async function refreshBuildState(){
+  if (!S || S.exe_found) return;
+  try { const n = await goGetState(); S.exe_found = n.exe_found; S.game_valid = n.game_valid; updateReady(); } catch {}
+}
+setInterval(refreshBuildState, 3000);
+window.addEventListener("focus", refreshBuildState);
+
 (async () => {
   try { const bg = await goBackground(); if (bg) $("#bg").style.backgroundImage = `url(${bg})`; } catch {}
   try { $("#logo").src = await goLogo(); } catch {}

@@ -22,7 +22,7 @@ import (
 	webview2 "github.com/jchv/go-webview2"
 )
 
-const launcherVersion = "1.3.7"
+const launcherVersion = "1.3.9"
 const titleID = "454107F9"
 
 //go:embed ui.html

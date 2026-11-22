@@ -26,8 +26,13 @@ Double-clicking `Install.cmd` does the same as the button.
 - Windows 10/11 64-bit, DirectX 12 capable GPU
 - [Microsoft Edge WebView2 Runtime](https://developer.microsoft.com/microsoft-edge/webview2/) (preinstalled on Windows 11)
 - About 20 GB of free space for the build
-- Supported game version: Xbox 360 **USA**, `default.xex` SHA-256
-  `ae42f7cc30ab3217af04f1c3c6a5ddb7e640d1e7df73b32f2877905a7d4d2670`
+- Supported game version: the original Xbox 360 **USA** disc — `default.xex` version **0.0.0.8**, media ID `75F7BA6A`, SHA-256
+  `ae42f7cc30ab3217af04f1c3c6a5ddb7e640d1e7df73b32f2877905a7d4d2670`.
+  **Not supported:** Platinum Hits, other regions and version 0.0.0.6 (they contain different code; the installer stops with a message).
+
+### Troubleshooting
+- **Windows Defender flags the ReXGlue SDK download or the launcher.** These are false positives (unsigned developer tools that start a build). Allow them in *Windows Security → Protection history*, or install the SDK by hand: download `rexglue-sdk-0.10.0-win-amd64.zip` from the [ReXGlue v0.10.0 release](https://github.com/rexglue/rexglue-sdk/releases/tag/v0.10.0) and extract it into the `tools\rexglue` folder (so that `...\bin\rexglue.exe` is somewhere inside it), then run the install again.
+- **Black screen after the loading animation:** check that your `default.xex` is the supported version above.
 
 ## Features
 
