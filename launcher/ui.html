@@ -635,7 +635,14 @@ window.addEventListener("focus", refreshBuildState);
 (async () => {
   try { const bg = await goBackground(); if (bg) $("#bg").style.backgroundImage = `url(${bg})`; } catch {}
   try { $("#logo").src = await goLogo(); } catch {}
-  S = await goGetState(); fillForm();
+  try { S = await goGetState(); fillForm(); }
+  catch (e) {
+    // The Go side did not answer (seen under Wine/Proton with an old WebView2):
+    // the page is still usable to read, but settings cannot be loaded or saved.
+    $("#ready_dot").className = "dot off";
+    $("#ready_text").textContent = "Launcher backend not responding" + (e && e.message ? ": " + e.message : "") +
+      ". On Linux, run it with Proton and the Microsoft Edge WebView2 Runtime installed in the prefix.";
+  }
 })();
 </script>
 </body>
